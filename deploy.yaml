@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kopf-operator
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: label-to-taint-operator
+  namespace: kopf-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: label-to-taint-operator
+  template:
+    metadata:
+      labels:
+        app: label-to-taint-operator
+    spec:
+      serviceAccountName: node-taint-operator
+      containers:
+      - name: operator
+        image: <YOUR_DOCKER_REPO>/label-to-taint-operator:latest
+        imagePullPolicy: Always
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: node-taint-operator
+  namespace: kopf-operator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: node-taint-operator
+rules:
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["get", "list", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: node-taint-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: node-taint-operator
+subjects:
+- kind: ServiceAccount
+  name: node-taint-operator
+  namespace: kopf-operator
